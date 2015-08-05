@@ -1,7 +1,5 @@
-mp4
+VisionMedia
 ===
 
-MP4 file format
-
-sdfsdf
+A Java API to read, write and create MP4 file format.
 
