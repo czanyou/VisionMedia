@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 public class Mp4StreamTest {
 
+	@SuppressWarnings("unused")
 	private static final Logger log = LoggerFactory
 			.getLogger(Mp4StreamTest.class);
 

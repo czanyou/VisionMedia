@@ -3,6 +3,11 @@ package org.vision.media.hls;
 import java.io.IOException;
 import java.io.InputStream;
 
+/**
+ * 
+ * @author m
+ *
+ */
 public class ByteBufferInputStream extends InputStream {
 
 	private byte[] mBuffer;

@@ -5,9 +5,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import org.junit.Test;
-import org.vision.media.avc.Mp4Video;
-import org.vision.media.avc.Mp4Video.AvcSeqParams;
-import org.vision.media.tools.Base64;
+import org.vision.media.avc.Mp4VideoUtils;
+import org.vision.media.avc.Mp4VideoUtils.AvcSeqParams;
+import org.vision.utils.Base64;
 
 
 
@@ -60,6 +60,7 @@ public class Mp4Test {
 
 	}
 
+	@SuppressWarnings("unused")
 	protected void print(Mp4SizeTableProperty table) {
 		System.out.println("\t Size Table |");
 		for (byte[] line : table.getRows()) {
@@ -110,7 +111,7 @@ public class Mp4Test {
 		System.out.println(data.length);
 		//System.out.println(StringUtils.encodeHex(data));
 		
-		AvcSeqParams params = Mp4Video.readSeqInfo(data);
+		AvcSeqParams params = Mp4VideoUtils.readSeqInfo(data);
 		System.out.println("Profile: " + params.profile);
 		System.out.println("Width: " + params.pic_width);
 		System.out.println("Height: " + params.pic_height);

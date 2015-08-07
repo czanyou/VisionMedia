@@ -10,8 +10,15 @@ import java.util.StringTokenizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * HTTP Live Streaming index file reader.
+ * 
+ * @author m
+ *
+ */
 public class PlayListReader {
 
+	/** Play List Item. */
 	public static class PlayItem {
 		public int duration;
 		public String url;
@@ -96,7 +103,7 @@ public class PlayListReader {
 			if (lastPlayItem != null) {
 				lastPlayItem.url = token;
 				lastPlayItem.sequence = mediaSequence + playList.size();
-				
+
 				playList.add(lastPlayItem);
 				lastPlayItem = null;
 			}
@@ -117,7 +124,7 @@ public class PlayListReader {
 						break;
 					}
 
-					//log.debug(token);
+					// log.debug(token);
 					parseLine(token);
 				}
 

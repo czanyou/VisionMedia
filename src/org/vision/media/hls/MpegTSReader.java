@@ -13,10 +13,15 @@ import org.vision.media.MMediaBuffer;
 import org.vision.media.MMediaExtractor;
 import org.vision.media.MMediaFormat;
 import org.vision.media.MMediaTypes;
-import org.vision.media.avc.Mp4Video;
+import org.vision.media.avc.Mp4VideoUtils;
 import org.vision.media.mp4.Mp4MediaFactory.MediaFrameInfo;
 import org.vision.media.mp4.Mp4Utils;
 
+/**
+ * 
+ * @author m
+ *
+ */
 public class MpegTSReader extends MMediaExtractor implements MpegTS {
 
 	protected static final Logger log = LoggerFactory
@@ -41,14 +46,14 @@ public class MpegTSReader extends MMediaExtractor implements MpegTS {
 
 	private ByteBuffer fReadBuffer;
 
-	private int mPmtId = 0xff;
-
-	private int mVideoId = 0xff;
-
 	@SuppressWarnings("unused")
 	private int mAudioId = 0xff;
 
+	private int mPmtId = 0xff;
+
 	private MMediaFormat mVideoFormat;
+
+	private int mVideoId = 0xff;
 
 	public MpegTSReader(String filename) {
 		fFileName = filename;
@@ -138,6 +143,16 @@ public class MpegTSReader extends MMediaExtractor implements MpegTS {
 		return fNextSample;
 	}
 
+	@Override
+	public long getCachedDuration() {
+		return 0;
+	}
+
+	@Override
+	public long getDuration() {
+		return 0;
+	}
+
 	private InputStream getInputStream() {
 		if (fInputStream != null) {
 			return fInputStream;
@@ -191,6 +206,26 @@ public class MpegTSReader extends MMediaExtractor implements MpegTS {
 		}
 	}
 
+	@Override
+	public long getPosition() {
+		return 0;
+	}
+
+	@Override
+	public int getSampleFlags() {
+		return 0;
+	}
+
+	@Override
+	public long getSampleTime() {
+		return 0;
+	}
+
+	@Override
+	public int getSampleTrackIndex() {
+		return 0;
+	}
+
 	private int getStartCodeLength(ByteBuffer sampleData) {
 		int headerSize = 0;
 
@@ -208,9 +243,19 @@ public class MpegTSReader extends MMediaExtractor implements MpegTS {
 		return headerSize;
 	}
 
+	@Override
+	public int getTrackCount() {
+		return 0;
+	}
+
 	public MMediaFormat getTrackFormat(int index) {
 		return mVideoFormat;
 
+	}
+
+	@Override
+	public boolean hasCacheReachedEndOfStream() {
+		return false;
 	}
 
 	private void onClose() {
@@ -262,110 +307,97 @@ public class MpegTSReader extends MMediaExtractor implements MpegTS {
 		//
 		value = buffer.getShort() & 0xffff;
 		int pmtId = value & 0x1fff;
-		log.debug("read PMT ID:" + pmtId);
+		// log.debug("read PMT ID:" + pmtId);
 
 		mPmtId = pmtId;
 	}
 
 	@SuppressWarnings("unused")
 	private void processPESPacket() {
-		fReadBuffer.flip();
-		fReadBuffer.mark();
-		// log.debug("read buffer:" + fReadBuffer);
 
-		// Start Code
-		fReadBuffer.get();
-		fReadBuffer.get();
-		fReadBuffer.get();
+		try {
+			fReadBuffer.flip();
+			fReadBuffer.mark();
+			// log.debug("read buffer:" + fReadBuffer);
 
-		// Stream ID
-		int streamID = fReadBuffer.get() & 0xff;
-		if (streamID == 0xE0) {
-			// log.debug("read stream id:" + streamID);
-		}
+			// Start Code
+			fReadBuffer.get();
+			fReadBuffer.get();
+			fReadBuffer.get();
 
-		//
-		fReadBuffer.get();
-		fReadBuffer.get(); // 16: PES Length
-
-		// Flags
-		fReadBuffer.get();
-
-		// PTS DTS
-		fReadBuffer.get();
-		long pts = 0;
-
-		// Data Length
-		int length = fReadBuffer.get() & 0xff;
-		if (length > 0) {
-
-			pts = readPTS(fReadBuffer);
-
-			for (int i = 0; i < length; i++) {
-				fReadBuffer.get();
+			// Stream ID
+			int streamID = fReadBuffer.get() & 0xff;
+			if (streamID == 0xE0) {
+				// log.debug("read stream id:" + streamID);
 			}
 
-		} else {
+			//
+			fReadBuffer.get();
+			fReadBuffer.get(); // 16: PES Length
 
-			pts = 0;
-			pts += (fReadBuffer.get() & 0x0e) << 30;
-			pts += (fReadBuffer.get() & 0xff) << 22;
-			pts += (fReadBuffer.get() & 0xfe) << 14;
-			pts += (fReadBuffer.get() & 0xff) << 7;
-			pts += (fReadBuffer.get() & 0xfe) >> 1;
-			pts = (pts - TS_PTS_BASE) * 1000 / 90;
-			log.debug("read pts:" + pts);
+			// Flags
+			fReadBuffer.get();
 
-			long dts = 0;
-			dts += (fReadBuffer.get() & 0x0e) << 29;
-			dts += (fReadBuffer.get() & 0xff) << 22;
-			dts += (fReadBuffer.get() & 0xfe) << 14;
-			dts += (fReadBuffer.get() & 0xff) << 7;
-			dts += (fReadBuffer.get() & 0xfe) >> 1;
-			// log.debug("read dts:" + dts);
+			// PTS DTS
+			fReadBuffer.get();
+			long pts = 0;
+
+			// Data Length
+			int length = fReadBuffer.get() & 0xff;
+			if (length > 0) {
+				pts = readPTS(fReadBuffer);
+				for (int i = 0; i < length; i++) {
+					fReadBuffer.get();
+				}
+
+			} else {
+				pts = 0;
+				pts += (fReadBuffer.get() & 0x0e) << 30;
+				pts += (fReadBuffer.get() & 0xff) << 22;
+				pts += (fReadBuffer.get() & 0xfe) << 14;
+				pts += (fReadBuffer.get() & 0xff) << 7;
+				pts += (fReadBuffer.get() & 0xfe) >> 1;
+				pts = (pts - TS_PTS_BASE) * 1000 / 90;
+				log.debug("read pts:" + pts);
+
+				long dts = 0;
+				dts += (fReadBuffer.get() & 0x0e) << 29;
+				dts += (fReadBuffer.get() & 0xff) << 22;
+				dts += (fReadBuffer.get() & 0xfe) << 14;
+				dts += (fReadBuffer.get() & 0xff) << 7;
+				dts += (fReadBuffer.get() & 0xfe) >> 1;
+				// log.debug("read dts:" + dts);
+			}
+
+			// au
+			fReadBuffer.get();
+			fReadBuffer.get();
+			fReadBuffer.get();
+
+			fReadBuffer.get();
+			fReadBuffer.get();
+			fReadBuffer.get();
+
+			fReadBuffer.mark();
+
+			int type = checkParamSets(fReadBuffer);
+			boolean isSyncPoint = type > 0;
+
+			fReadBuffer.reset();
+
+			MMediaBuffer buffer = new MMediaBuffer();
+			buffer.setData(fReadBuffer.duplicate());
+			buffer.setEnd(true);
+			buffer.setSampleTime(pts);
+			buffer.setSyncPoint(isSyncPoint);
+
+			fCurrentSample = buffer;
+
+			fReadBuffer.clear();
+
+		} catch (Exception e) {
+			log.debug(e.getMessage());
 		}
-
-		// au
-		fReadBuffer.get();
-		fReadBuffer.get();
-		fReadBuffer.get();
-
-		fReadBuffer.get();
-		fReadBuffer.get();
-		fReadBuffer.get();
-
-		fReadBuffer.mark();
-
-		int type = checkParamSets(fReadBuffer);
-		boolean isSyncPoint = type > 0;
-
-		fReadBuffer.reset();
-
-		MMediaBuffer buffer = new MMediaBuffer();
-		buffer.setData(fReadBuffer.duplicate());
-		buffer.setEnd(true);
-		buffer.setSampleTime(pts);
-		buffer.setSyncPoint(isSyncPoint);
-
-		fCurrentSample = buffer;
-
-		fReadBuffer.clear();
-	}
-
-	private long readPTS(ByteBuffer buffer) {
-		buffer.mark();
-
-		long pts = 0;
-		pts += (buffer.get() & 0x0e) << 30;
-		pts += (buffer.get() & 0xff) << 22;
-		pts += (buffer.get() & 0xfe) << 14;
-		pts += (buffer.get() & 0xff) << 7;
-		pts += (buffer.get() & 0xfe) >> 1;
-		pts = (pts - TS_PTS_BASE) * 1000 / 90;
-
-		buffer.reset();
-
-		return pts;
 	}
 
 	private void processPMTPacket() {
@@ -419,11 +451,11 @@ public class MpegTSReader extends MMediaExtractor implements MpegTS {
 
 		if (codecId == STREAM_TYPE_VIDEO_H264) {
 			mVideoId = streamId;
-			log.debug("read videoId:" + streamId + "," + length);
+			// log.debug("read videoId:" + streamId + "," + length);
 
 		} else if (codecId == STREAM_TYPE_AUDIO_AAC) {
 			mAudioId = streamId;
-			log.debug("read audioId:" + streamId + "," + length);
+			// log.debug("read audioId:" + streamId + "," + length);
 		}
 
 		if (length >= 21) {
@@ -436,11 +468,11 @@ public class MpegTSReader extends MMediaExtractor implements MpegTS {
 
 			if (codecId == STREAM_TYPE_VIDEO_H264) {
 				mVideoId = streamId;
-				log.debug("read videoId:" + streamId + "," + length);
+				// log.debug("read videoId:" + streamId + "," + length);
 
 			} else if (codecId == STREAM_TYPE_AUDIO_AAC) {
 				mAudioId = streamId;
-				log.debug("read audioId:" + streamId + "," + length);
+				// log.debug("read audioId:" + streamId + "," + length);
 			}
 
 		}
@@ -490,7 +522,7 @@ public class MpegTSReader extends MMediaExtractor implements MpegTS {
 				newBuffer.put(fReadBuffer);
 				fReadBuffer = newBuffer;
 
-				log.warn("newSize:" + newSize);
+				// log.warn("newSize:" + newSize);
 			}
 		}
 
@@ -549,6 +581,30 @@ public class MpegTSReader extends MMediaExtractor implements MpegTS {
 		return pts;
 	}
 
+	private long readPTS(ByteBuffer buffer) {
+		buffer.mark();
+
+		long pts = 0;
+		// hight int
+		pts = (buffer.get() & 0x0e);
+		pts = pts << 30;
+		
+		// low int
+		pts += (buffer.get() & 0xff) << 22;
+		pts += (buffer.get() & 0xfe) << 14;
+		pts += (buffer.get() & 0xff) << 7;
+		pts += (buffer.get() & 0xfe) >> 1;
+	
+		pts = (pts - TS_PTS_BASE) * 1000 / 90;
+		buffer.reset();
+		return pts;
+	}
+
+	@Override
+	public int readSampleData(ByteBuffer byteBuffer, int offset) {
+		return 0;
+	}
+
 	private long saveVideoParamSets(byte[] sampleData) {
 		if (sampleData == null) {
 			return 0;
@@ -557,15 +613,16 @@ public class MpegTSReader extends MMediaExtractor implements MpegTS {
 			return 0;
 		}
 
-		int type = Mp4Video.getNaluType(sampleData, 0);
+		int type = Mp4VideoUtils.getNaluType(sampleData, 0);
 
-		log.debug("sampleSize: " + sampleData.length + ", type=" + type);
+		// log.debug("sampleSize: " + sampleData.length + ", type=" + type);
 
-		if (type == Mp4Video.H264_NAL_TYPE_SEQ_PARAM) {
-			MediaFrameInfo frameInfo = Mp4Video.parseSeqInfo(sampleData);
+		if (type == Mp4VideoUtils.H264_NAL_TYPE_SEQ_PARAM) {
+			MediaFrameInfo frameInfo = Mp4VideoUtils.parseSeqInfo(sampleData);
 
-			log.debug("videoWidth: " + frameInfo.videoWidth + ", videoHeight="
-					+ frameInfo.videoHeight);
+			// log.debug("videoWidth: " + frameInfo.videoWidth +
+			// ", videoHeight="
+			// + frameInfo.videoHeight);
 
 			if (mVideoFormat == null) {
 				mVideoFormat = MMediaFormat.newVideoFormat(MMediaTypes.H264,
@@ -577,6 +634,21 @@ public class MpegTSReader extends MMediaExtractor implements MpegTS {
 		}
 
 		return 0;
+	}
+
+	@Override
+	public void seekTo(long time, int flags) {
+
+	}
+
+	@Override
+	public void selectTrack(int index) {
+
+	}
+
+	@Override
+	public void setDataSource(String path) throws IOException {
+
 	}
 
 	public void setFilename(String filename) {
@@ -596,80 +668,7 @@ public class MpegTSReader extends MMediaExtractor implements MpegTS {
 	}
 
 	@Override
-	public long getCachedDuration() {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public long getDuration() {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public long getPosition() {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public int getSampleFlags() {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public long getSampleTime() {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public int getSampleTrackIndex() {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public int getTrackCount() {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public boolean hasCacheReachedEndOfStream() {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public int readSampleData(ByteBuffer byteBuffer, int offset) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public void seekTo(long time, int flags) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void selectTrack(int index) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setDataSource(String path) throws IOException {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
 	public void unselectTrack(int index) {
-		// TODO Auto-generated method stub
-		
+
 	}
 }

@@ -50,6 +50,7 @@ public class MMediaBuffer {
 		return flags;
 	}
 
+	/** 采集这个数据块的时间戳, 单位为微秒 (1/1000000秒). */
 	public long getSampleTime() {
 		return sampleTime;
 	}

@@ -18,10 +18,10 @@ import org.vision.media.mp4.Mp4Reader;
 import org.vision.media.mp4.Mp4Track;
 
 public class MediaWriteTest {
-	@SuppressWarnings("unused")
 	private static final Logger log = LoggerFactory
 			.getLogger(MediaWriteTest.class);
 
+	@SuppressWarnings("unused")
 	@Test
 	public void testReader() throws IOException {
 		Mp4Reader reader = new Mp4Reader();
@@ -37,7 +37,6 @@ public class MediaWriteTest {
 		// video Format
 		MMediaFormat videoFormat = reader.getTrackFormat(videoTrackIndex);
 		assertNotNull(videoFormat);
-
 		assertEquals(MMediaTypes.VIDEO, videoFormat.getMediaType());
 		assertEquals(MMediaTypes.H264, videoFormat.getCodecType());
 		assertEquals(1920, videoFormat.getVideoWidth());
@@ -50,7 +49,6 @@ public class MediaWriteTest {
 		// Video Tracks
 		Mp4Track videoTrack = reader.getTrack("vide");
 		assertNotNull(videoTrack);
-
 		assertEquals(30, videoTrack.getChunkCount());
 		assertEquals(3511800, videoTrack.getAvgBitrate());
 		assertEquals(209, videoTrack.getDuration());
@@ -63,10 +61,13 @@ public class MediaWriteTest {
 		assertEquals(1920, videoTrack.getVideoWidth());
 		assertEquals(1080, videoTrack.getVideoHeight());
 
-		MpegTSWrtier wrtier = new MpegTSWrtier("data/hd.ts");
-
-		ByteBuffer readBuffer = ByteBuffer.allocate(videoFormat.getVideoWidth()
-				* videoFormat.getVideoHeight() * 2);
+		//
+		MpegTSWrtier wrtier = new MpegTSWrtier("data/output/hd1080.ts");
+		
+		int width = videoFormat.getVideoWidth();
+		int height = videoFormat.getVideoHeight();
+		int bufferSize = width * height * 2;
+		ByteBuffer readBuffer = ByteBuffer.allocate(bufferSize);
 
 		int i = 0;
 		while (reader.advance()) {
@@ -91,7 +92,6 @@ public class MediaWriteTest {
 			buffer.setSampleTime(sampleTime);
 			buffer.setSyncPoint(isSyncPoint);
 			buffer.setData(readBuffer);
-
 			wrtier.writeVideoData(buffer);
 		}
 

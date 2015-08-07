@@ -30,19 +30,10 @@ public class MMediaTypes {
 
 	public static final int AUDIO_TYPE = 1;
 
-	// G726 音频编码
-	public static final int G726_16 = 6;
-
-	public static final int G726_24 = 7;
-
-	public static final int G726_32 = 8;
-
-	public static final int G726_40 = 9;
-
-	// h.264 视频编码
+	/** h.264 视频编码 */
 	public static final int H264 = 101;
 
-	// h.265 视频编码
+	/** h.265 视频编码 */
 	public static final int H265 = 107;
 
 	/** G.711 a-law audio codec. */

@@ -21,6 +21,7 @@ public class Mp4LiveTest {
 	private static final Logger log = LoggerFactory
 			.getLogger(Mp4LiveTest.class);
 
+	@SuppressWarnings("unused")
 	@Test
 	public void testWriter2() throws IOException {
 		File file = new File("live.mp4");

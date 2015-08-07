@@ -15,7 +15,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.vision.media.MMediaTypes;
-import org.vision.media.avc.Mp4Video;
+import org.vision.media.avc.Mp4VideoUtils;
 import org.vision.media.mp4.Mp4MediaFactory.MediaFrameInfo;
 
 public class Mp4Moive {
@@ -85,25 +85,6 @@ public class Mp4Moive {
 			ulaw.setProperty("channels", channels);
 			ulaw.setProperty("sampleSize", 16);
 			ulaw.setProperty("reserved2", 0);
-
-		} else if (type == MMediaTypes.G726_16 || type == MMediaTypes.G726_24
-				|| type == MMediaTypes.G726_32 || type == MMediaTypes.G726_40) {
-			atom.setProperty("mdia.minf.stbl.stsd.entryCount", 1);
-			Mp4Atom g726 = atom.addChildAtom("mdia.minf.stbl.stsd.g726");
-			g726.setProperty("sampleRate", timeScale);
-			g726.setProperty("dataReferenceIndex", 1);
-			g726.setProperty("channels", channels);
-			g726.setProperty("sampleSize", 16);
-			g726.setProperty("reserved2", 16);
-			if (type == MMediaTypes.G726_24) {
-				g726.setProperty("reserved2", 24);
-
-			} else if (type == MMediaTypes.G726_32) {
-				g726.setProperty("reserved2", 32);
-
-			} else if (type == MMediaTypes.G726_40) {
-				g726.setProperty("reserved2", 40);
-			}
 		}
 
 		track.init();
@@ -111,17 +92,6 @@ public class Mp4Moive {
 		return track;
 	}
 
-	/**
-	 * ���һ��ָ�������͵� Track.
-	 * 
-	 * @param type
-	 *            Ҫ��ӵ� Track ������.
-	 * @param timeScale
-	 *            ��� Track �� Time Scale ֵ.
-	 * @return ���ش����� Track ��ʵ��.
-	 * @throws IllegalStateException
-	 *             ���ǰ��״̬���� INIT.
-	 */
 	public static Mp4Track addTrack(long trackId, String type, int timeScale) {
 
 		long now = Mp4Factory.getMP4Timestamp();
@@ -217,7 +187,7 @@ public class Mp4Moive {
 
 	public static MediaFrameInfo parseSeqInfo(byte[] data) {
 		MediaFrameInfo info = new MediaFrameInfo();
-		Mp4Video.AvcSeqParams params = Mp4Video.readSeqInfo(data);
+		Mp4VideoUtils.AvcSeqParams params = Mp4VideoUtils.readSeqInfo(data);
 		if (params != null) {
 			info.videoWidth = params.pic_width;
 			info.videoHeight = params.pic_height;
@@ -261,13 +231,6 @@ public class Mp4Moive {
 		file.seek(end);
 	}
 
-	/**
-	 * ��ʼд�뵱ǰ Atom.
-	 * 
-	 * @param mp4Stream
-	 * @return
-	 * @throws IOException
-	 */
 	public static void writeAtomHeader(Mp4Stream file, Mp4Atom atom)
 			throws IOException {
 		int type = atom.getType();
@@ -276,12 +239,6 @@ public class Mp4Moive {
 		file.write(Mp4Atom.getAtomType(type).getBytes());
 	}
 
-	/**
-	 * ���д����
-	 * 
-	 * @param mp4Stream
-	 * @throws IOException
-	 */
 	public static void writeAtomSize(Mp4Stream file, Mp4Atom atom)
 			throws IOException {
 		long start = atom.getStart();
@@ -293,14 +250,6 @@ public class Mp4Moive {
 		file.seek(end);
 	}
 
-	/**
-	 * д���������
-	 * 
-	 * @param file
-	 *            Ҫд����ļ�
-	 * @throws IOException
-	 *             ��������
-	 */
 	public static void writeProperty(Mp4Stream file, Mp4Property property)
 			throws IOException {
 		Mp4PropertyType type = property.getType();
@@ -338,7 +287,6 @@ public class Mp4Moive {
 		case PT_TABLE:
 		case PT_DESCRIPTOR:
 		case PT_SIZE_TABLE:
-			// Ĭ��ʵ��
 			property.write(file);
 			break;
 		}

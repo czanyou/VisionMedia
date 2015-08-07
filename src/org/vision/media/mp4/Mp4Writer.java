@@ -25,7 +25,7 @@ import org.vision.media.MMediaBuffer;
 import org.vision.media.MMediaFormat;
 import org.vision.media.MMediaMuxer;
 import org.vision.media.MMediaTypes;
-import org.vision.media.avc.Mp4Video;
+import org.vision.media.avc.Mp4VideoUtils;
 
 /**
  * 代表一个 MP4 文件书写器.
@@ -667,10 +667,12 @@ public class Mp4Writer extends MMediaMuxer {
 		}
 
 		if (getState() == State.FINISHED) {
-
 			// Media data file
 			File mdfFile = new File(filename + ".mdf");
 			File mp4File = new File(filename);
+			if (mp4File.exists()) {
+				mp4File.delete();
+			}
 
 			boolean ret = mdfFile.renameTo(mp4File);
 			if (mp4File.exists()) {
@@ -679,8 +681,10 @@ public class Mp4Writer extends MMediaMuxer {
 				indexFile.delete();
 			}
 
-			log.debug("rename '" + mdfFile.getAbsolutePath() + "' to '"
-					+ mp4File.getAbsolutePath() + "' (" + ret + ").");
+			if (!ret) {
+				log.debug("rename '" + mdfFile.getAbsolutePath() + "' to '"
+						+ mp4File.getAbsolutePath() + "' (" + ret + ").");
+			}
 		}
 
 		videoSqsSampleData = null;
@@ -713,20 +717,20 @@ public class Mp4Writer extends MMediaMuxer {
 			return 0;
 		}
 
-		int type = Mp4Video.getNaluType(sampleData.array(),
+		int type = Mp4VideoUtils.getNaluType(sampleData.array(),
 				sampleData.position());
 		if (!waitParameterSets) {
-			if (type == Mp4Video.H264_NAL_TYPE_SEQ_PARAM) {
+			if (type == Mp4VideoUtils.H264_NAL_TYPE_SEQ_PARAM) {
 				return 1;
 
-			} else if (type == Mp4Video.H264_NAL_TYPE_PIC_PARAM) {
+			} else if (type == Mp4VideoUtils.H264_NAL_TYPE_PIC_PARAM) {
 				return 1;
 			}
 
 			return 0;
 		}
 
-		if (type == Mp4Video.H264_NAL_TYPE_SEQ_PARAM) {
+		if (type == Mp4VideoUtils.H264_NAL_TYPE_SEQ_PARAM) {
 			if (videoSqsSampleData == null) {
 				byte[] data = new byte[sampleSize];
 				sampleData.get(data);
@@ -735,7 +739,7 @@ public class Mp4Writer extends MMediaMuxer {
 
 			return 1;
 
-		} else if (type == Mp4Video.H264_NAL_TYPE_PIC_PARAM) {
+		} else if (type == Mp4VideoUtils.H264_NAL_TYPE_PIC_PARAM) {
 			if (videoPpsSampleData == null) {
 				byte[] data = new byte[sampleSize];
 				sampleData.get(data);
@@ -789,7 +793,7 @@ public class Mp4Writer extends MMediaMuxer {
 	protected void setState(State state) {
 		this.state = state;
 	}
-	
+
 	@Override
 	public int setVideoFormat(MMediaFormat mediaFormat) {
 		if (videoTrack == null) {
@@ -807,7 +811,7 @@ public class Mp4Writer extends MMediaMuxer {
 		return 0;
 	}
 
-	public long writeAudioData(MMediaBuffer sample) {
+	private long writeAudioData(MMediaBuffer sample, int flags) {
 		try {
 			return innerWriteAudioData(sample);
 		} catch (IOException e) {
@@ -815,8 +819,7 @@ public class Mp4Writer extends MMediaMuxer {
 		}
 	}
 
-	public long writeAudioData(MMediaBuffer sampleInfo, int flags)
-			throws IOException {
+	public long writeAudioData(MMediaBuffer sampleInfo) {
 
 		ByteBuffer readBuffer = sampleInfo.getData();
 		int size = readBuffer.limit() - readBuffer.position();
@@ -825,6 +828,7 @@ public class Mp4Writer extends MMediaMuxer {
 		if (size <= 0) {
 			return 0;
 		}
+		
 		ByteBuffer data = ByteBuffer.allocate(size);
 		data.put(readBuffer);
 		data.flip();
@@ -832,10 +836,10 @@ public class Mp4Writer extends MMediaMuxer {
 		// log.debug("writeAudioData: " + size + "/" + data + "/" +
 		// sampleInfo.getSampleTime());
 		sampleInfo.setData(data);
-		return writeAudioData(sampleInfo);
+		return writeAudioData(sampleInfo, 0);
 	}
 
-	public long writeVideoData(MMediaBuffer mediaBuffer) {
+	private long writeVideoData(MMediaBuffer mediaBuffer, int flags) {
 		try {
 			return innerWriteVideoData(mediaBuffer);
 		} catch (IOException e) {
@@ -843,14 +847,20 @@ public class Mp4Writer extends MMediaMuxer {
 		}
 	}
 
-	public long writeVideoData(MMediaBuffer sampleInfo, int flags)
-			throws IOException {
-
+	public long writeVideoData(MMediaBuffer sampleInfo) {
 		ByteBuffer readBuffer = sampleInfo.getData();
 		byte[] startCode = new byte[] { 0x00, 0x00, 0x00, 0x01 };
-		boolean isEnd = false;
+		
 		boolean isSyncSample = sampleInfo.isSyncPoint();
 		long sampleTime = sampleInfo.getSampleTime();
+		
+		int headerSize = getStartCodeLength(readBuffer);
+		// log.debug("headerSize: " + headerSize + "/size=" + sampleInfo.getSize());
+		if (headerSize == 3) {
+			startCode = new byte[] { 0x00, 0x00, 0x01 };
+		}
+		
+		boolean isEnd = false;
 		while (!isEnd) {
 			int pos = Mp4Utils.byteIndexOf(readBuffer, startCode, 1);
 			int size = readBuffer.limit() - readBuffer.position() - 4;
@@ -861,7 +871,7 @@ public class Mp4Writer extends MMediaMuxer {
 				isEnd = true;
 			}
 
-			// log.debug("count: " + size + "/" + pos + "/" + readBuffer);
+			//log.debug("count: size=" + size + "/pos=" + pos + "/" + readBuffer);
 
 			byte[] bytes = new byte[size];
 			readBuffer.getInt();
@@ -875,7 +885,7 @@ public class Mp4Writer extends MMediaMuxer {
 			mediaBuffer.setSyncPoint(isSyncSample);
 			mediaBuffer.setEnd(isEnd);
 			mediaBuffer.setSampleTime(sampleTime);
-			writeVideoData(mediaBuffer);
+			writeVideoData(mediaBuffer, 0);
 
 			isSyncSample = false;
 		}

@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
@@ -104,8 +105,34 @@ public class HttpLiveClient {
 		return false;
 	}
 
+	private String getParentPath(String path) {
+		if (path == null || path.length() <= 0) {
+			return "";
+			
+		} else if (path.endsWith("/")) {
+			return path.substring(0, path.length() - 1);
+		}
+		
+		int pos = path.lastIndexOf('/');
+		if (pos <= 0) {
+			return "";
+		}
+		
+		return path.substring(0, pos);
+	}
+	
 	public PlayStreamHandler getStreamHandler() {
 		return mStreamHandler;
+	}
+	
+	private boolean isValidURL(String url) {
+		try {
+			new URL(url);
+			return true;
+			
+		} catch (MalformedURLException e) {
+			return false;
+		}
 	}
 
 	private void onLoadPlayItem(PlayItem playItem) {
@@ -115,9 +142,32 @@ public class HttpLiveClient {
 
 		mPlayList.add(playItem);
 		mDownloadList.offer(playItem);
+		
+		if (isValidURL(playItem.url)) {
+			return;
+		}
 
-		log.warn("new play item:" + playItem.url + "(" + playItem.sequence
-				+ ")");
+		try {
+			URL url = new URL(mBaseURL);
+			String basePath = getParentPath(url.getPath());
+
+			StringBuilder sb = new StringBuilder();
+			sb.append(url.getProtocol()).append("://");
+			sb.append(url.getHost());
+			if (url.getPort() > 0) {
+				sb.append(":");
+				sb.append(url.getPort());
+			}
+			sb.append(basePath);
+			sb.append("/");
+			sb.append(playItem.url);
+
+			playItem.url = sb.toString();
+		} catch (Exception e) {
+
+		}
+
+		log.warn("play item:" + playItem.url + "(" + playItem.sequence + ")");
 
 		onStartBuffering();
 	}
@@ -145,7 +195,6 @@ public class HttpLiveClient {
 			}
 
 			MMediaBuffer mediaBuffer = mStreamReader.currentSample();
-
 
 			if (mStreamHandler != null) {
 				mStreamHandler.onMediaSample(0, mediaBuffer);
@@ -259,6 +308,9 @@ public class HttpLiveClient {
 			}
 
 			return;
+
+		} catch (MalformedURLException e) {
+			log.warn(e.getMessage());
 
 		} catch (Exception e) {
 			log.error(e.getMessage(), e);

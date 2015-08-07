@@ -20,13 +20,12 @@ import org.vision.media.mp4.Mp4Writer;
 
 public class MediaReadTest {
 
-	@SuppressWarnings("unused")
 	private static final Logger log = LoggerFactory
 			.getLogger(MediaReadTest.class);
 
 	public void testFile() throws IOException {
 		Mp4Reader reader = new Mp4Reader();
-		reader.setDataSource("data/hd.out.mp4");
+		reader.setDataSource("data/output/demo.mp4");
 
 		// track Count
 		int trackCount = reader.getTrackCount();
@@ -64,24 +63,27 @@ public class MediaReadTest {
 		assertEquals(1080, videoTrack.getVideoHeight());
 	}
 
+	@SuppressWarnings("unused")
 	@Test
 	public void testReader() throws IOException {
 
-		MpegTSReader reader = new MpegTSReader("data/stream.ts");
+		MpegTSReader reader = new MpegTSReader("data/demo.ts");
 		// MpegTSReader reader = new MpegTSReader("data/hd.ts");
 
 		int videoCodec = MMediaTypes.H264;
-		int videoWidth = 1920;
-		int videoHeight = 1080;
+		int videoWidth = 1280;
+		int videoHeight = 720;
 
 		// Dest
-		MMediaMuxer writer = new Mp4Writer("data/hd.out.mp4");
+		MMediaMuxer writer = new Mp4Writer("data/output/demo.mp4");
 		MMediaFormat videoFormat = MMediaFormat.newVideoFormat(videoCodec,
 				videoWidth, videoHeight);
 		writer.setVideoFormat(videoFormat);
-
 		writer.start();
 
+		long startTime = 0;
+
+		//
 		int count = 0;
 		while (true) {
 			if (!reader.advance()) {
@@ -94,13 +96,16 @@ public class MediaReadTest {
 			boolean isEnd = mediaBuffer.isEnd();
 			count++;
 
-			if (isSyncPoint) {
-				log.debug(count + ": time: " + mediaBuffer.getSampleTime()
-						+ "/size." + mediaBuffer.getSize());
+			if (startTime == 0) {
+				startTime = mediaBuffer.getSampleTime();
+			}
+
+			long time = ((mediaBuffer.getSampleTime() - startTime) / 1000);
+			if (isEnd) {
+				log.debug(count + ": time: " + time + "/" + mediaBuffer);
 			}
 
 			writer.writeVideoData(mediaBuffer);
-
 		}
 
 		log.debug("count: " + count);

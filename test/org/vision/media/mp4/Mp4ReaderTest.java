@@ -198,6 +198,7 @@ public class Mp4ReaderTest {
 
 	}
 
+	@SuppressWarnings("unused")
 	public void testReader2() throws IOException {
 		Mp4Reader reader = new Mp4Reader();
 		reader.setDataSource("car.mp4");

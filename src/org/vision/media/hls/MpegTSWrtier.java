@@ -87,8 +87,7 @@ public class MpegTSWrtier extends MMediaMuxer implements MpegTS {
 
 	@Override
 	public void start() throws IOException {
-		// TODO Auto-generated method stub
-
+		
 	}
 
 	private OutputStream getOutputStream() {
@@ -127,7 +126,6 @@ public class MpegTSWrtier extends MMediaMuxer implements MpegTS {
 
 	@Override
 	public int setAudioFormat(MMediaFormat mediaFormat) {
-		// TODO Auto-generated method stub
 		return 0;
 	}
 
@@ -141,13 +139,11 @@ public class MpegTSWrtier extends MMediaMuxer implements MpegTS {
 
 	@Override
 	public int setVideoFormat(MMediaFormat mediaFormat) {
-		// TODO Auto-generated method stub
 		return 0;
 	}
 
 	@Override
 	public long writeAudioData(MMediaBuffer mediaBuffer) {
-		// TODO Auto-generated method stub
 		return 0;
 	}
 

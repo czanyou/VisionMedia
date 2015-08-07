@@ -25,7 +25,7 @@ import org.vision.media.MMediaBuffer;
 import org.vision.media.MMediaFormat;
 import org.vision.media.MMediaMuxer;
 import org.vision.media.MMediaTypes;
-import org.vision.media.avc.Mp4Video;
+import org.vision.media.avc.Mp4VideoUtils;
 import org.vision.media.mp4.Mp4Writer.State;
 
 /**
@@ -365,20 +365,20 @@ public class Mp4StreamWriter extends MMediaMuxer {
 			return 0;
 		}
 
-		int type = Mp4Video.getNaluType(sampleData.array(),
+		int type = Mp4VideoUtils.getNaluType(sampleData.array(),
 				sampleData.position());
 		if (!waitParameterSets) {
-			if (type == Mp4Video.H264_NAL_TYPE_SEQ_PARAM) {
+			if (type == Mp4VideoUtils.H264_NAL_TYPE_SEQ_PARAM) {
 				return 1;
 
-			} else if (type == Mp4Video.H264_NAL_TYPE_PIC_PARAM) {
+			} else if (type == Mp4VideoUtils.H264_NAL_TYPE_PIC_PARAM) {
 				return 1;
 			}
 
 			return 0;
 		}
 
-		if (type == Mp4Video.H264_NAL_TYPE_SEQ_PARAM) {
+		if (type == Mp4VideoUtils.H264_NAL_TYPE_SEQ_PARAM) {
 			if (videoSqsSampleData == null) {
 				byte[] data = new byte[sampleSize];
 				sampleData.get(data);
@@ -389,7 +389,7 @@ public class Mp4StreamWriter extends MMediaMuxer {
 
 			return 1;
 
-		} else if (type == Mp4Video.H264_NAL_TYPE_PIC_PARAM) {
+		} else if (type == Mp4VideoUtils.H264_NAL_TYPE_PIC_PARAM) {
 			if (videoPpsSampleData == null) {
 				byte[] data = new byte[sampleSize];
 				sampleData.get(data);
