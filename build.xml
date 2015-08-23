@@ -1,0 +1,53 @@
+
+<project name="Vision Media 3 Project" basedir="." default="jar">
+
+	<target name="init">
+		<property name="project.home" value="${basedir}"/>		
+		<property file="${basedir}/build.properties" />	
+	
+		<path id="classpath">
+			<pathelement path="${java.class.path}" />
+			<fileset dir="${project.lib}">
+				<include name="**/*.jar" />
+			</fileset>
+		</path>
+
+		<mkdir dir="${project.build}"/>
+	</target>
+
+	<!-- Compiles the source directory -->
+	<target name="build_media" depends="init">
+		<mkdir dir="${project.build}"/>
+		<javac srcdir="${project.src}" destdir="${project.build}" debug="${debug}" encoding="UTF-8"
+			optimize="${optimize}" source="1.6" includeantruntime="false" >
+			<classpath refid="classpath" />
+		</javac>
+		<copy todir="${project.build}">
+		    <fileset dir="${project.src}" excludes="**/*.java"/>
+		</copy>
+	</target>
+
+	<!-- Creates the class package -->
+	<target name="jar" depends="build_media">
+		<jar jarfile="${project.home}/${project.jar}" basedir="${project.build}"
+			includes="**" />
+	</target>
+
+	<!-- Creates the API documentation -->
+	<target name="javadoc" depends="init">
+		<mkdir dir="${project.docs}" />
+		<javadoc packagenames="org.vision.*" sourcepath="${project.src}"
+			destdir="${project.docs}" author="true" version="true" use="true"
+			splitindex="true" windowtitle="${project.name} API" doctitle="${project.name}">
+			<classpath refid="classpath" />
+		</javadoc>
+	</target>
+
+	<!-- Clean targets -->
+	<target name="clean" depends="init">
+		<delete dir="${project.build}/org" />
+		<delete>
+			<fileset dir="${project.build}" includes="**/*.class" />
+		</delete>
+	</target>
+</project>
