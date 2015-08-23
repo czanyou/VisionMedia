@@ -33,6 +33,7 @@ public class Mp4QueryString implements Cloneable {
 		if (text == null) {
 			return;
 		}
+		
 		String tokens[] = text.split("&");
 		for (int i = 0; i < tokens.length; i++) {
 			String token = tokens[i];
